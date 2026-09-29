@@ -275,6 +275,8 @@ function playSound(e: GameEvent, s: MatchState, mine: number[]) {
       return sfx.start();
     case 'beat':
       return sfx.beat(e.idx);
+    case 'tempo':
+      return sfx.tempo(e.faster);
     case 'pull':
       if (e.sync) sfx.sync();
       return e.onBeat ? sfx.pullBeat(e.combo) : sfx.pull();

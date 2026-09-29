@@ -23,8 +23,6 @@ export interface View {
   highlight: number[]; // players controlled on this device (for "you" markers)
 }
 
-const APPROACH_TICKS = 26; // the ring appears ~0.43 s before each beat
-
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number; color: string }
 interface FloatText { x: number; y: number; text: string; color: string; life: number; size: number }
 
@@ -78,6 +76,9 @@ export class Fx {
         break;
       case 'beat':
         this.beatFlash = 1;
+        break;
+      case 'tempo':
+        this.text(L.cx + pos * L.span, L.ropeY - L.fig * 1.6, e.faster ? 'Темп быстрее ▲' : 'Темп медленнее ▼', '#ffd23f', 24);
         break;
       case 'burstFail':
         this.text(teamX(s.players[e.p].team), y - 40, BURST_FAIL[e.reason] ?? 'Рывок недоступен', '#ff9a9a', 18);
@@ -288,12 +289,10 @@ export function draw(c: CanvasRenderingContext2D, w: number, h: number, v: View,
 
 function drawBeat(c: CanvasRenderingContext2D, x: number, y: number, r: number, v: View, fx: Fx) {
   const { prev, next } = beatAround(v.s, v.tickF);
-  const off = Math.min(v.tickF - prev, next - v.tickF);
+  const period = next - prev;
+  const phase = Math.min(1, Math.max(0, (v.tickF - prev) / period));
+  const off = Math.min(phase, 1 - phase) * period;
   const inWindow = off <= BEAT_WINDOW;
-  // The approach ring always takes the same time to close, so the moment of
-  // the next beat can be read even though the gaps between beats are random.
-  const left = next - v.tickF;
-  const phase = 1 - Math.min(1, left / APPROACH_TICKS);
   c.lineWidth = 4;
   c.strokeStyle = inWindow ? '#3ddc84' : 'rgba(255,255,255,0.85)';
   c.fillStyle = inWindow ? 'rgba(61,220,132,0.35)' : 'rgba(0,0,0,0.18)';
@@ -302,8 +301,7 @@ function drawBeat(c: CanvasRenderingContext2D, x: number, y: number, r: number, 
   c.fill();
   c.stroke();
   // Approach ring shrinks onto the target at the moment of the beat.
-  if (left > APPROACH_TICKS) return;
-  c.strokeStyle = `rgba(255,210,63,${0.25 + phase * 0.75})`;
+  c.strokeStyle = `rgba(255,210,63,${0.35 + phase * 0.65})`;
   c.lineWidth = 3;
   c.beginPath();
   c.arc(x, y, r * (1 + 2 * (1 - phase)), 0, Math.PI * 2);

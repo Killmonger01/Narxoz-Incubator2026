@@ -6,9 +6,8 @@
 export const TICK_HZ = 60;
 export const COUNTDOWN_TICKS = 3 * TICK_HZ;
 export const BEAT_TICKS = 36; // base tempo: 0.6 s -> 100 BPM
-export const CALM_BEATS = 4; // the first beats keep the base tempo
-export const GAP_MIN = 26; // after that every gap is random: 0.43–0.83 s
-export const GAP_MAX = 50;
+export const TEMPOS = [28, 36, 46]; // beat periods in ticks: ~129, 100, ~78 BPM
+export const SEGMENT_BEATS = 8; // the tempo changes every 8 beats
 export const BEAT_WINDOW = 6; // ±100 ms counts as "in rhythm"
 export const MIN_PULL_GAP = 7; // ~117 ms: faster taps are ignored
 export const REST_DELAY = 24; // 0.4 s without pulling before stamina regenerates
@@ -98,6 +97,7 @@ export type GameEvent =
   | { type: 'exhausted'; p: number }
   | { type: 'brace'; p: number; on: boolean }
   | { type: 'burstFail'; p: number; reason: Reject }
+  | { type: 'tempo'; faster: boolean }
   | { type: 'end'; winner: Team | 'draw'; reason: EndReason };
 
 export type Action = { t: 'pull' } | { t: 'burst' } | { t: 'brace'; on: boolean };
@@ -154,9 +154,9 @@ export function rng(seed: number) {
 const schedules = new Map<string, number[]>();
 
 /**
- * Beat times (ticks after the start) for the whole match. The first beats use
- * the base tempo, then every gap is random, derived from the match seed — the
- * same on the server and every client, so the rhythm cannot be memorised.
+ * Beat times (ticks after the start) for the whole match. The first 8 beats
+ * use the base tempo, then every 8 beats the tempo switches to a different
+ * one, picked from the match seed — the same on the server and every client.
  */
 export function beatSchedule(s: MatchState): number[] {
   const len = s.endTick - s.startTick + 60;
@@ -165,9 +165,14 @@ export function beatSchedule(s: MatchState): number[] {
   if (beats) return beats;
   const rand = rng(s.seed);
   beats = [];
+  let period = BEAT_TICKS;
   for (let t = 0, n = 0; t <= len; n++) {
+    if (n > 0 && n % SEGMENT_BEATS === 0) {
+      const others = TEMPOS.filter((p) => p !== period);
+      period = others[Math.floor(rand() * others.length)];
+    }
     beats.push(t);
-    t += n < CALM_BEATS ? BEAT_TICKS : GAP_MIN + Math.floor(rand() * (GAP_MAX - GAP_MIN + 1));
+    t += period;
   }
   if (schedules.size > 50) schedules.clear();
   schedules.set(key, beats);
@@ -340,7 +345,15 @@ export function step(s: MatchState, events: GameEvent[]) {
   }
 
   const { idx, offset } = beatInfo(s);
-  if (offset === 0 && idx > 0) events.push({ type: 'beat', idx });
+  if (offset === 0 && idx > 0) {
+    events.push({ type: 'beat', idx });
+    if (idx % SEGMENT_BEATS === 0) {
+      const beats = beatSchedule(s);
+      const before = beats[idx] - beats[idx - 1];
+      const after = (beats[idx + 1] ?? beats[idx] + before) - beats[idx];
+      if (after !== before) events.push({ type: 'tempo', faster: after < before });
+    }
+  }
 
   const teamForce = [0, 0];
   const braced = [false, false];
