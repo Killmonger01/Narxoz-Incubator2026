@@ -86,5 +86,6 @@ export const sfx = {
   win: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.25, 'triangle', 0.2, undefined, i * 0.11)),
   lose: () => [392, 330, 262].forEach((f, i) => tone(f, 0.3, 'triangle', 0.16, undefined, i * 0.15)),
   crowd: () => noise(1.2, 1200, 0.12, 0.5, 700),
+  denied: () => tone(180, 0.12, 'square', 0.08, 140),
   click: () => tone(700, 0.04, 'triangle', 0.1),
 };

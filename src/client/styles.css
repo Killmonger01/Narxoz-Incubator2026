@@ -1104,3 +1104,7 @@ select {
   align-items: center;
   gap: 8px;
 }
+.bar.burst.full.weak i {
+  animation: none;
+  opacity: 0.45;
+}

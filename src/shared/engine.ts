@@ -93,6 +93,7 @@ export type GameEvent =
   | { type: 'burstReady'; p: number }
   | { type: 'exhausted'; p: number }
   | { type: 'brace'; p: number; on: boolean }
+  | { type: 'burstFail'; p: number; reason: Reject }
   | { type: 'end'; winner: Team | 'draw'; reason: EndReason };
 
 export type Action = { t: 'pull' } | { t: 'burst' } | { t: 'brace'; on: boolean };
@@ -182,8 +183,13 @@ export function applyAction(
     return null;
   }
   if (s.phase !== 'playing') return 'not-playing';
-  if (isExhausted(s, p)) return 'exhausted';
-  if (p.braceSince >= 0) return 'bracing';
+  // A failed burst is reported so the player sees why nothing happened.
+  const burstFail = (reason: Reject) => {
+    if (a.t === 'burst') events.push({ type: 'burstFail', p: i, reason });
+    return reason;
+  };
+  if (isExhausted(s, p)) return burstFail('exhausted');
+  if (p.braceSince >= 0) return burstFail('bracing');
 
   if (a.t === 'pull') {
     if (atTick - p.lastPullTick < MIN_PULL_GAP) return 'too-fast';
@@ -216,8 +222,8 @@ export function applyAction(
   }
 
   // burst
-  if (p.burstCharge < 100) return 'no-charge';
-  if (p.stamina < BURST_COST) return 'no-stamina';
+  if (p.burstCharge < 100) return burstFail('no-charge');
+  if (p.stamina < BURST_COST) return burstFail('no-stamina');
   const opp = opponents(s, p.team);
   const blocked = opp.some((o) => isBracing(s, o));
   const broken = !blocked && opp.every((o) => isExhausted(s, o) || isResting(s, o));

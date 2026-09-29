@@ -76,6 +76,8 @@ export function GameView({ driver, controls, names, colors, arena, rope, series,
       posRef.current += (s.pos - posRef.current) * Math.min(1, (dt / 1000) * 14);
       const ev = driver.drain();
       for (const e of ev) {
+        // Only explain failed bursts to the player who pressed the key.
+        if (e.type === 'burstFail' && !p.controls.some((c) => c.player === e.p)) continue;
         fx.on(e, s, posRef.current);
         playSound(e, s, p.controls.map((c) => c.player));
       }
@@ -212,9 +214,9 @@ function PlayerHud({ p, s, name, mine }: { p: PlayerState; s: MatchState; name: 
       <div className={`bar stamina ${low ? 'low' : ''}`} title="Выносливость">
         <i style={{ width: `${p.stamina}%` }} />
       </div>
-      <div className={`bar burst ${p.burstCharge >= 100 ? 'full' : ''}`} title="Заряд рывка">
+      <div className={`bar burst ${p.burstCharge >= 100 ? (p.stamina < BURST_COST ? 'full weak' : 'full') : ''}`} title="Заряд рывка">
         <i style={{ width: `${p.burstCharge}%` }} />
-        {p.burstCharge >= 100 && <span>РЫВОК</span>}
+        {p.burstCharge >= 100 && <span>{p.stamina < BURST_COST ? 'МАЛО СИЛ' : 'РЫВОК'}</span>}
       </div>
     </div>
   );
@@ -284,6 +286,8 @@ function playSound(e: GameEvent, s: MatchState, mine: number[]) {
       return mine.includes(e.p) && sfx.burstReady();
     case 'exhausted':
       return sfx.exhausted();
+    case 'burstFail':
+      return sfx.denied();
     case 'brace':
       return e.on && sfx.brace();
     case 'end': {

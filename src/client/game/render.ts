@@ -26,6 +26,13 @@ export interface View {
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number; color: string }
 interface FloatText { x: number; y: number; text: string; color: string; life: number; size: number }
 
+const BURST_FAIL: Partial<Record<string, string>> = {
+  'no-charge': 'Рывок не заряжен — тяни в ритм',
+  'no-stamina': 'Мало сил для рывка (нужно 15)',
+  bracing: 'Отпусти упор для рывка',
+  exhausted: 'Выдохся — подожди',
+};
+
 /** Visual effects driven by game events; lives outside the game state. */
 export class Fx {
   parts: Particle[] = [];
@@ -69,6 +76,9 @@ export class Fx {
         break;
       case 'beat':
         this.beatFlash = 1;
+        break;
+      case 'burstFail':
+        this.text(teamX(s.players[e.p].team), y - 40, BURST_FAIL[e.reason] ?? 'Рывок недоступен', '#ff9a9a', 18);
         break;
     }
   }
