@@ -1,5 +1,5 @@
 // Headless balance check: runs many bot-vs-bot and scripted matches.
-import { createMatch, step, applyAction, nextBeatTick, type GameEvent, type MatchState, type Action } from '../src/shared/engine.ts';
+import { createMatch, step, applyAction, type GameEvent, type MatchState, type Action } from '../src/shared/engine.ts';
 import { Bot, type Difficulty } from '../src/shared/bot.ts';
 
 type Brain = { think(s: MatchState): Action[]; observe?(s: MatchState, e: GameEvent[]): void };
@@ -9,7 +9,7 @@ const holder = (i: number): Brain => ({ think: () => [{ t: 'pull' }] }); // "hol
 const idle = (): Brain => ({ think: () => [] });
 
 function play(a: Brain, b: Brain, seconds = 60) {
-  const s = createMatch({ durationSec: seconds, teamSize: 1 }, Math.floor(Math.random() * 2 ** 31));
+  const s = createMatch({ durationSec: seconds, teamSize: 1 });
   let ev: GameEvent[] = [];
   while (s.phase !== 'finished') {
     for (const [i, br] of [a, b].entries()) for (const act of br.think(s)) applyAction(s, i, act, ev);
@@ -51,7 +51,7 @@ const human = (jit: number) => (seed: number): Brain => {
     if (me.stamina < 25) resting = true; if (me.stamina > 75) resting = false;
     if (me.burstCharge >= 100 && me.stamina > 20) out.push({ t: 'burst' });
     if (resting) return out;
-    if (next < s.tick) next = nextBeatTick(s, s.tick + 3) + Math.round((r() * 2 - 1) * jit);
+    if (next < s.tick) { const t = s.tick - s.startTick; next = s.startTick + Math.ceil((t + 3) / 36) * 36 + Math.round((r() * 2 - 1) * jit); }
     if (s.tick === next) out.push({ t: 'pull' });
     return out;
   } };

@@ -395,10 +395,7 @@ export class Room extends DurableObject<Env> {
     const cfg = this.cfg!;
     this.round++;
     this.phase = 'match';
-    this.match = createMatch(
-      { durationSec: cfg.durationSec, teamSize: cfg.teamSize },
-      crypto.getRandomValues(new Uint32Array(1))[0],
-    );
+    this.match = createMatch({ durationSec: cfg.durationSec, teamSize: cfg.teamSize });
     this.bots = this.slots.map((s, i) => (s.bot ? new Bot(i, s.bot, Date.now() + i) : null));
     for (const s of this.slots) s.lastAt = -1;
     this.pending = [];

@@ -5,9 +5,7 @@
 
 export const TICK_HZ = 60;
 export const COUNTDOWN_TICKS = 3 * TICK_HZ;
-export const BEAT_TICKS = 36; // base tempo: 0.6 s -> 100 BPM
-export const TEMPOS = [28, 36, 46]; // beat periods in ticks: ~129, 100, ~78 BPM
-export const SEGMENT_BEATS = 8; // the tempo changes every 8 beats
+export const BEAT_TICKS = 36; // 0.6 s -> 100 BPM
 export const BEAT_WINDOW = 6; // ±100 ms counts as "in rhythm"
 export const MIN_PULL_GAP = 7; // ~117 ms: faster taps are ignored
 export const REST_DELAY = 24; // 0.4 s without pulling before stamina regenerates
@@ -84,7 +82,6 @@ export interface MatchState {
   players: PlayerState[];
   winner: Team | 'draw' | null;
   reason: EndReason | null;
-  seed: number; // defines this match's tempo changes
 }
 
 export type GameEvent =
@@ -97,7 +94,6 @@ export type GameEvent =
   | { type: 'exhausted'; p: number }
   | { type: 'brace'; p: number; on: boolean }
   | { type: 'burstFail'; p: number; reason: Reject }
-  | { type: 'tempo'; faster: boolean }
   | { type: 'end'; winner: Team | 'draw'; reason: EndReason };
 
 export type Action = { t: 'pull' } | { t: 'burst' } | { t: 'brace'; on: boolean };
@@ -120,7 +116,7 @@ export function newPlayer(team: Team): PlayerState {
 }
 
 // Players are ordered team by team: [left..., right...].
-export function createMatch(cfg: MatchConfig, seed = 1): MatchState {
+export function createMatch(cfg: MatchConfig): MatchState {
   const players: PlayerState[] = [];
   for (let i = 0; i < cfg.teamSize; i++) players.push(newPlayer(0));
   for (let i = 0; i < cfg.teamSize; i++) players.push(newPlayer(1));
@@ -135,48 +131,7 @@ export function createMatch(cfg: MatchConfig, seed = 1): MatchState {
     players,
     winner: null,
     reason: null,
-    seed: seed >>> 0,
   };
-}
-
-/** Small seeded PRNG (mulberry32). */
-export function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const schedules = new Map<string, number[]>();
-
-/**
- * Beat times (ticks after the start) for the whole match. The first 8 beats
- * use the base tempo, then every 8 beats the tempo switches to a different
- * one, picked from the match seed — the same on the server and every client.
- */
-export function beatSchedule(s: MatchState): number[] {
-  const len = s.endTick - s.startTick + 60;
-  const key = `${s.seed}:${len}`;
-  let beats = schedules.get(key);
-  if (beats) return beats;
-  const rand = rng(s.seed);
-  beats = [];
-  let period = BEAT_TICKS;
-  for (let t = 0, n = 0; t <= len; n++) {
-    if (n > 0 && n % SEGMENT_BEATS === 0) {
-      const others = TEMPOS.filter((p) => p !== period);
-      period = others[Math.floor(rand() * others.length)];
-    }
-    beats.push(t);
-    t += period;
-  }
-  if (schedules.size > 50) schedules.clear();
-  schedules.set(key, beats);
-  return beats;
 }
 
 export const isBracing = (s: MatchState, p: PlayerState) =>
@@ -190,37 +145,9 @@ export const fatigue = (p: PlayerState) => 0.55 + 0.45 * (p.stamina / MAX_STAMIN
 
 /** Offset (in ticks) of `tick` from the nearest beat, and that beat's index. */
 export function beatInfo(s: MatchState, tick = s.tick) {
-  const beats = beatSchedule(s);
   const t = tick - s.startTick;
-  if (t <= 0) return { idx: 0, offset: t };
-  let lo = 0;
-  let hi = beats.length - 1;
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1;
-    if (beats[mid] <= t) lo = mid;
-    else hi = mid;
-  }
-  const idx = t - beats[lo] <= beats[hi] - t ? lo : hi;
-  return { idx, offset: t - beats[idx] };
-}
-
-/** Previous and next beat (absolute ticks) around a possibly fractional tick. */
-export function beatAround(s: MatchState, tickF: number) {
-  const beats = beatSchedule(s);
-  const t = tickF - s.startTick;
-  let i = 0;
-  while (i < beats.length - 1 && beats[i + 1] <= t) i++;
-  const prev = beats[i];
-  const next = beats[Math.min(i + 1, beats.length - 1)];
-  return { prev: s.startTick + prev, next: s.startTick + (next > prev ? next : prev + BEAT_TICKS) };
-}
-
-/** Absolute tick of the first beat at or after `tick`. */
-export function nextBeatTick(s: MatchState, tick: number) {
-  const beats = beatSchedule(s);
-  const t = tick - s.startTick;
-  for (const b of beats) if (b >= t) return s.startTick + b;
-  return s.endTick + BEAT_TICKS;
+  const idx = Math.round(t / BEAT_TICKS);
+  return { idx, offset: t - idx * BEAT_TICKS };
 }
 
 export const secondsLeft = (s: MatchState) =>
@@ -345,15 +272,7 @@ export function step(s: MatchState, events: GameEvent[]) {
   }
 
   const { idx, offset } = beatInfo(s);
-  if (offset === 0 && idx > 0) {
-    events.push({ type: 'beat', idx });
-    if (idx % SEGMENT_BEATS === 0) {
-      const beats = beatSchedule(s);
-      const before = beats[idx] - beats[idx - 1];
-      const after = (beats[idx + 1] ?? beats[idx] + before) - beats[idx];
-      if (after !== before) events.push({ type: 'tempo', faster: after < before });
-    }
-  }
+  if (offset === 0 && idx > 0) events.push({ type: 'beat', idx });
 
   const teamForce = [0, 0];
   const braced = [false, false];
