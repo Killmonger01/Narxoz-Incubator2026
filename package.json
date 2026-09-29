@@ -1,0 +1,29 @@
+{
+  "name": "kanat",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:worker": "wrangler dev --port 8787",
+    "build": "tsc -b && vite build",
+    "db:migrate:local": "wrangler d1 migrations apply kanat-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply kanat-db --remote",
+    "deploy": "npm run build && wrangler deploy",
+    "sim": "node --experimental-strip-types scripts/sim.ts",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "wrangler": "^4.143.0"
+  }
+}
