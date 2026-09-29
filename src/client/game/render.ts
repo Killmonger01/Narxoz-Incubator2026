@@ -1,7 +1,7 @@
 // Canvas 2D scene: arena, two teams, the rope with its center mark, the beat
 // ring and effects. Reads game state only; never changes it.
 import {
-  BEAT_TICKS,
+  beatAround,
   BEAT_WINDOW,
   isBracing,
   isExhausted,
@@ -76,6 +76,9 @@ export class Fx {
         break;
       case 'beat':
         this.beatFlash = 1;
+        break;
+      case 'tempo':
+        this.text(L.cx + pos * L.span, L.ropeY - L.fig * 1.6, e.faster ? 'Темп быстрее ▲' : 'Темп медленнее ▼', '#ffd23f', 24);
         break;
       case 'burstFail':
         this.text(teamX(s.players[e.p].team), y - 40, BURST_FAIL[e.reason] ?? 'Рывок недоступен', '#ff9a9a', 18);
@@ -285,9 +288,10 @@ export function draw(c: CanvasRenderingContext2D, w: number, h: number, v: View,
 }
 
 function drawBeat(c: CanvasRenderingContext2D, x: number, y: number, r: number, v: View, fx: Fx) {
-  const t = v.tickF - v.s.startTick;
-  const phase = (((t % BEAT_TICKS) + BEAT_TICKS) % BEAT_TICKS) / BEAT_TICKS;
-  const off = Math.min(phase, 1 - phase) * BEAT_TICKS;
+  const { prev, next } = beatAround(v.s, v.tickF);
+  const period = next - prev;
+  const phase = Math.min(1, Math.max(0, (v.tickF - prev) / period));
+  const off = Math.min(phase, 1 - phase) * period;
   const inWindow = off <= BEAT_WINDOW;
   c.lineWidth = 4;
   c.strokeStyle = inWindow ? '#3ddc84' : 'rgba(255,255,255,0.85)';

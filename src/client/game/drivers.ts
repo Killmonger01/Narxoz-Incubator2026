@@ -26,7 +26,7 @@ export class LocalDriver implements Driver {
   private hold = false;
 
   constructor(cfg: MatchConfig, bots: (Difficulty | null)[] = []) {
-    this.s = createMatch(cfg);
+    this.s = createMatch(cfg, Math.floor(Math.random() * 2 ** 31));
     this.bots = this.s.players.map((_, i) => (bots[i] ? new Bot(i, bots[i]!, Math.floor(Math.random() * 1e9)) : null));
   }
 

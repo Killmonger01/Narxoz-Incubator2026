@@ -4,8 +4,9 @@
 // charge, rope position) and reacts to events with a human-like delay.
 
 import {
-  BEAT_TICKS,
   BRACE_DELAY,
+  nextBeatTick,
+  rng,
   BURST_COST,
   isExhausted,
   isResting,
@@ -43,17 +44,7 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   champion: 'Чемпион',
 };
 
-/** Small seeded PRNG (mulberry32) so bot behaviour is reproducible. */
-export function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { rng };
 
 export class Bot {
   private p: Profile;
@@ -145,16 +136,15 @@ export class Bot {
       return out;
     }
 
-    // Rhythm: aim for the next beat with some human error.
+    // Rhythm: aim for the next beat (tempo may change) with some human error.
     if (this.nextPullTick < s.tick) {
-      const t = s.tick - s.startTick;
-      const nextBeat = s.startTick + Math.ceil((t + 3) / BEAT_TICKS) * BEAT_TICKS;
-      const skip = this.rand() < this.p.miss ? BEAT_TICKS : 0;
-      this.nextPullTick = nextBeat + skip + Math.round(this.gauss() * this.p.jitter);
+      let nextBeat = nextBeatTick(s, s.tick + 3);
+      if (this.rand() < this.p.miss) nextBeat = nextBeatTick(s, nextBeat + 1);
+      this.nextPullTick = nextBeat + Math.round(this.gauss() * this.p.jitter);
       // Occasionally add an off-beat pull between beats when pressing an advantage.
       const pressing = opps.some((o) => isExhausted(s, o) || isResting(s, o)) || danger > 0.4;
       this.fillerTick =
-        pressing && me.stamina > 50 && this.rand() < this.p.filler ? nextBeat - Math.floor(BEAT_TICKS / 2) : -1;
+        pressing && me.stamina > 50 && this.rand() < this.p.filler ? Math.round((s.tick + nextBeat) / 2) : -1;
     }
     if (s.tick === this.fillerTick) out.push({ t: 'pull' });
     if (s.tick === this.nextPullTick) out.push({ t: 'pull' });
