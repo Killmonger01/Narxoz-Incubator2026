@@ -47,3 +47,22 @@ export const colorById = (id: string) => COLORS.find((a) => a.id === id) ?? COLO
 
 export const PRO_PRICE_KZT = 990;
 export const TEST_CARD = '4242 4242 4242 4242';
+export const TEST_CARD_DECLINED = '4000 0000 0000 0002';
+
+/** Luhn checksum, as real card forms do. */
+export function luhnValid(digits: string) {
+  if (!/^\d{13,19}$/.test(digits)) return false;
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    let d = +digits[digits.length - 1 - i];
+    if (i % 2 === 1) d = d * 2 > 9 ? d * 2 - 9 : d * 2;
+    sum += d;
+  }
+  return sum % 10 === 0;
+}
+
+export function cardBrand(digits: string): 'visa' | 'mastercard' | 'unknown' {
+  if (/^4/.test(digits)) return 'visa';
+  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'mastercard';
+  return 'unknown';
+}

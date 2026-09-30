@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ARENAS, COLORS, PRO_PRICE_KZT, ROPES, TEST_CARD, type Cosmetics } from '../../shared/cosmetics.ts';
+import { ARENAS, cardBrand, COLORS, luhnValid, PRO_PRICE_KZT, ROPES, TEST_CARD, TEST_CARD_DECLINED, type Cosmetics } from '../../shared/cosmetics.ts';
 import { createMatch } from '../../shared/engine.ts';
 import { api, getToken, setAuth, useUser } from '../api.ts';
 import { navigate } from '../router.ts';
@@ -13,9 +13,6 @@ export function Shop() {
   const user = useUser();
   const cos = useCosmetics();
   const [checkout, setCheckout] = useState(false);
-  const [card, setCard] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
   const pro = !!user?.pro;
 
   const choose = async (patch: Partial<Cosmetics>) => {
@@ -24,21 +21,6 @@ export function Shop() {
       const d = await api('/me', { method: 'PATCH', body: { cosmetics: next } });
       setAuth(getToken(), d.user);
     } else setSettings({ guestCosmetics: next });
-  };
-
-  const pay = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    try {
-      const d = await api('/shop/test-purchase', { body: { card } });
-      setAuth(getToken(), d.user);
-      setCheckout(false);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
   };
 
   const Item = ({ id, name, isPro, active, onPick, swatch }: { id: string; name: string; isPro: boolean; active: boolean; onPick: () => void; swatch: React.ReactNode }) => {
@@ -126,39 +108,7 @@ export function Shop() {
         </div>
       </div>
 
-      {checkout && (
-        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setCheckout(false)}>
-          <div className="card">
-            <p className="pill warn">ТЕСТОВЫЙ РЕЖИМ — деньги не списываются</p>
-            <h2>Pro на 30 дней · {PRO_PRICE_KZT} ₸</h2>
-            {!user ? (
-              <>
-                <p>Pro привязывается к аккаунту.</p>
-                <button className="btn primary" onClick={() => navigate('/login', { back: '/shop' })}>
-                  Войти
-                </button>
-              </>
-            ) : (
-              <form className="form" onSubmit={pay}>
-                <input inputMode="numeric" placeholder="Номер карты" value={card} onChange={(e) => setCard(e.target.value)} autoFocus />
-                <p className="muted small">
-                  Используй тестовую карту <b>{TEST_CARD}</b>. Любая другая будет отклонена.{' '}
-                  <a onClick={() => setCard(TEST_CARD)}>Подставить</a>
-                </p>
-                {error && <p className="error">{error}</p>}
-                <div className="row">
-                  <button className="btn primary" disabled={busy}>
-                    {busy ? 'Оплата…' : `Оплатить ${PRO_PRICE_KZT} ₸ (тест)`}
-                  </button>
-                  <button type="button" className="btn ghost" onClick={() => setCheckout(false)}>
-                    Отмена
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {checkout && <Checkout onClose={() => setCheckout(false)} signedIn={!!user} />}
     </div>
   );
 }
@@ -225,6 +175,158 @@ export function Settings() {
           Имя для онлайна (для гостей)
           <input value={s.name} maxLength={20} placeholder="Гость" onChange={(e) => setSettings({ name: e.target.value })} />
         </label>
+      </div>
+    </div>
+  );
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  currency: string;
+  last4: string;
+  createdAt: number;
+  until: number;
+}
+
+const formatCard = (v: string) => v.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim();
+const formatExp = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 4);
+  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+};
+
+/**
+ * Checkout window in the style of a payment provider's test mode: the card is
+ * validated like a real one, then the server records the payment and turns
+ * Pro on. No money moves — the banner says so on every step.
+ */
+function Checkout({ onClose, signedIn }: { onClose: () => void; signedIn: boolean }) {
+  const [card, setCard] = useState('');
+  const [exp, setExp] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [step, setStep] = useState<'form' | 'processing' | 'done'>('form');
+  const [payment, setPayment] = useState<Payment | null>(null);
+  const digits = card.replace(/\s/g, '');
+  const brand = cardBrand(digits);
+  const cardOk = luhnValid(digits);
+
+  const pay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!cardOk) return setError('Проверь номер карты');
+    if (!/^\d{2}\/\d{2}$/.test(exp)) return setError('Срок в формате ММ/ГГ');
+    if (!/^\d{3,4}$/.test(cvc)) return setError('CVC — 3 цифры');
+    setStep('processing');
+    const started = Date.now();
+    try {
+      const d = await api('/shop/test-purchase', { body: { card: digits, exp, cvc, name } });
+      // A short pause so the "processing" state reads as a real authorisation.
+      await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - started))));
+      setAuth(getToken(), d.user);
+      setPayment(d.payment);
+      setStep('done');
+    } catch (err) {
+      await new Promise((r) => setTimeout(r, Math.max(0, 900 - (Date.now() - started))));
+      setError((err as Error).message);
+      setStep('form');
+    }
+  };
+
+  return (
+    <div className="overlay" onClick={(e) => e.target === e.currentTarget && step !== 'processing' && onClose()}>
+      <div className="card checkout">
+        <div className="checkout-head">
+          <span className="pill warn">Тестовый режим · деньги не списываются</span>
+          <b>Касса</b>
+        </div>
+        {!signedIn ? (
+          <>
+            <h2>Pro на 30 дней · {PRO_PRICE_KZT} ₸</h2>
+            <p>Pro привязывается к аккаунту.</p>
+            <button className="btn primary" onClick={() => navigate('/login', { back: '/shop' })}>
+              Войти
+            </button>
+          </>
+        ) : step === 'done' && payment ? (
+          <div className="receipt">
+            <span className="receipt-ok">✓</span>
+            <h2>Платёж принят</h2>
+            <p className="muted">Pro активен до {new Date(payment.until).toLocaleDateString('ru-RU')}</p>
+            <dl>
+              <dt>Номер платежа</dt>
+              <dd>{payment.id}</dd>
+              <dt>Сумма</dt>
+              <dd>
+                {payment.amount} {payment.currency === 'KZT' ? '₸' : payment.currency}
+              </dd>
+              <dt>Карта</dt>
+              <dd>•••• {payment.last4}</dd>
+              <dt>Дата</dt>
+              <dd>{new Date(payment.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</dd>
+              <dt>Режим</dt>
+              <dd>test — реальное списание не выполнялось</dd>
+            </dl>
+            <button className="btn primary" onClick={onClose} autoFocus>
+              К оформлению
+            </button>
+          </div>
+        ) : step === 'processing' ? (
+          <div className="receipt">
+            <span className="spinner" aria-hidden="true" />
+            <h2>Обрабатываем платёж…</h2>
+            <p className="muted">Проверяем карту и подтверждаем подписку</p>
+          </div>
+        ) : (
+          <form className="form checkout-form" onSubmit={pay}>
+            <div className="checkout-sum">
+              <span>Тянем‑Потянем Pro · 30 дней</span>
+              <b>{PRO_PRICE_KZT} ₸</b>
+            </div>
+            <label className="field">
+              Номер карты
+              <span className="card-input">
+                <input
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  placeholder="0000 0000 0000 0000"
+                  value={card}
+                  onChange={(e) => setCard(formatCard(e.target.value))}
+                  autoFocus
+                />
+                <span className={`brand ${brand}`}>{brand === 'visa' ? 'VISA' : brand === 'mastercard' ? 'MC' : ''}</span>
+              </span>
+            </label>
+            <div className="field-row">
+              <label className="field">
+                Срок
+                <input inputMode="numeric" autoComplete="cc-exp" placeholder="ММ/ГГ" value={exp} onChange={(e) => setExp(formatExp(e.target.value))} />
+              </label>
+              <label className="field">
+                CVC
+                <input inputMode="numeric" autoComplete="cc-csc" placeholder="123" maxLength={4} value={cvc} onChange={(e) => setCvc(e.target.value.replace(/\D/g, ''))} />
+              </label>
+            </div>
+            <label className="field">
+              Имя на карте
+              <input autoComplete="cc-name" placeholder="ALISHER R." value={name} onChange={(e) => setName(e.target.value.toUpperCase())} />
+            </label>
+            <p className="muted small">
+              Тестовые карты: <a onClick={() => (setCard(TEST_CARD), setExp('12/29'), setCvc('123'))}>{TEST_CARD}</a> — успех,{' '}
+              <a onClick={() => (setCard(TEST_CARD_DECLINED), setExp('12/29'), setCvc('123'))}>{TEST_CARD_DECLINED}</a> — отказ банка.
+              Реальные карты не принимаются.
+            </p>
+            {error && <p className="error">{error}</p>}
+            <div className="row">
+              <button className="btn primary">Оплатить {PRO_PRICE_KZT} ₸</button>
+              <button type="button" className="btn ghost" onClick={onClose}>
+                Отмена
+              </button>
+            </div>
+            <p className="muted small">🔒 Данные карты проверяются на сервере и не сохраняются: остаются только последние 4 цифры.</p>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import {
   type Env,
   type UserRow,
 } from './auth.ts';
-import { PRO_PRICE_KZT, sanitizeCosmetics } from '../shared/cosmetics.ts';
+import { luhnValid, PRO_PRICE_KZT, sanitizeCosmetics } from '../shared/cosmetics.ts';
 import { ROOM_CODE_RE } from '../shared/protocol.ts';
 import { CHALLENGES } from '../shared/challenges.ts';
 
@@ -246,22 +246,47 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     return json({ ok: true });
   }
 
-  // Test-mode checkout: no real money moves. Only the Stripe-style test card is accepted.
+  // Test-mode checkout, modelled on a payment provider's test environment:
+  // the card is validated like a real one (Luhn, expiry, CVC), but no money
+  // moves. 4242… succeeds, 4000 0000 0000 0002 is declined, anything else is
+  // refused as "not a test card".
   if (path === '/shop/test-purchase' && method === 'POST') {
-    const b = await body<{ card: string }>(req);
+    const b = await body<{ card: string; exp: string; cvc: string; name: string }>(req);
     const card = str(b.card, 30).replace(/\s+/g, '');
-    if (card !== '4242424242424242') return fail(402, 'Тестовый режим: используйте карту 4242 4242 4242 4242');
+    const exp = str(b.exp, 7);
+    const cvc = str(b.cvc, 4);
+    if (!luhnValid(card)) return fail(400, 'Неверный номер карты');
+    const m = exp.match(/^(\d{2})\s*\/\s*(\d{2})$/);
+    if (!m || +m[1] < 1 || +m[1] > 12) return fail(400, 'Срок действия в формате ММ/ГГ');
+    const expires = new Date(2000 + +m[2], +m[1], 1).getTime();
+    if (expires < Date.now()) return fail(400, 'Срок действия карты истёк');
+    if (!/^\d{3,4}$/.test(cvc)) return fail(400, 'CVC — 3 цифры с обратной стороны карты');
+    if (card === '4000000000000002') return fail(402, 'Карта отклонена банком (тестовый отказ)');
+    if (card !== '4242424242424242') return fail(402, 'Это тестовый режим: реальные карты не принимаются. Используйте 4242 4242 4242 4242');
     const now = Date.now();
     const base = Math.max(now, user.pro_until);
     const until = base + 30 * 24 * 3600 * 1000;
+    const id = 'pay_' + randomHex(8);
     await env.DB.batch([
       env.DB.prepare('UPDATE users SET pro_until = ? WHERE id = ?').bind(until, user.id),
       env.DB.prepare(
         `INSERT INTO payments (id, user_id, item, amount, mode, card_last4, created_at) VALUES (?, ?, 'pro-30d', ?, 'test', ?, ?)`,
-      ).bind(crypto.randomUUID(), user.id, PRO_PRICE_KZT, card.slice(-4), now),
+      ).bind(id, user.id, PRO_PRICE_KZT, card.slice(-4), now),
     ]);
     const fresh = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first<UserRow>();
-    return json({ user: publicUser(fresh!) });
+    return json({
+      user: publicUser(fresh!),
+      payment: { id, amount: PRO_PRICE_KZT, currency: 'KZT', last4: card.slice(-4), createdAt: now, until, mode: 'test' },
+    });
+  }
+
+  if (path === '/shop/payments' && method === 'GET') {
+    const rows = await env.DB.prepare(
+      'SELECT id, item, amount, mode, card_last4, created_at FROM payments WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
+    )
+      .bind(user.id)
+      .all();
+    return json({ payments: rows.results });
   }
 
   if (path === '/shop/cancel' && method === 'POST') {

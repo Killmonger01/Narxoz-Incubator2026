@@ -1541,3 +1541,118 @@ select {
 .app.shell .slot {
   border: 2px solid var(--line);
 }
+
+/* ---- Checkout --------------------------------------------------------- */
+.checkout {
+  max-width: 460px;
+  text-align: left;
+}
+.checkout-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.checkout-head .pill {
+  margin: 0;
+}
+.checkout-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+}
+.checkout-sum b {
+  font-size: 22px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.field input {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.card-input {
+  position: relative;
+  display: block;
+}
+.card-input .brand {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #1a1f71;
+}
+.card-input .brand.mastercard {
+  color: #eb001b;
+}
+.checkout .row {
+  justify-content: flex-start;
+}
+.receipt {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.receipt-ok {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1d8f4e;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+}
+.receipt dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  text-align: left;
+  width: 100%;
+  margin: 8px 0 12px;
+  font-size: 14px;
+}
+.receipt dt {
+  color: var(--muted);
+}
+.receipt dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid var(--line);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
