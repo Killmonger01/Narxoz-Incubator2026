@@ -261,6 +261,7 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     const expires = new Date(2000 + +m[2], +m[1], 1).getTime();
     if (expires < Date.now()) return fail(400, 'Срок действия карты истёк');
     if (!/^\d{3,4}$/.test(cvc)) return fail(400, 'CVC — 3 цифры с обратной стороны карты');
+    if (str(b.name, 60).length < 2) return fail(400, 'Укажите имя, как на карте');
     if (card === '4000000000000002') return fail(402, 'Карта отклонена банком (тестовый отказ)');
     if (card !== '4242424242424242') return fail(402, 'Это тестовый режим: реальные карты не принимаются. Используйте 4242 4242 4242 4242');
     const now = Date.now();

@@ -218,6 +218,7 @@ function Checkout({ onClose, signedIn }: { onClose: () => void; signedIn: boolea
     if (!cardOk) return setError('Проверь номер карты');
     if (!/^\d{2}\/\d{2}$/.test(exp)) return setError('Срок в формате ММ/ГГ');
     if (!/^\d{3,4}$/.test(cvc)) return setError('CVC — 3 цифры');
+    if (name.trim().length < 2) return setError('Укажи имя, как на карте');
     setStep('processing');
     const started = Date.now();
     try {
@@ -310,13 +311,18 @@ function Checkout({ onClose, signedIn }: { onClose: () => void; signedIn: boolea
             </div>
             <label className="field">
               Имя на карте
-              <input autoComplete="cc-name" placeholder="ALISHER R." value={name} onChange={(e) => setName(e.target.value.toUpperCase())} />
+              <input autoComplete="cc-name" placeholder="IVAN IVANOV" required value={name} onChange={(e) => setName(e.target.value.toUpperCase())} />
             </label>
-            <p className="muted small">
-              Тестовые карты: <a onClick={() => (setCard(TEST_CARD), setExp('12/29'), setCvc('123'))}>{TEST_CARD}</a> — успех,{' '}
-              <a onClick={() => (setCard(TEST_CARD_DECLINED), setExp('12/29'), setCvc('123'))}>{TEST_CARD_DECLINED}</a> — отказ банка.
-              Реальные карты не принимаются.
-            </p>
+            <div className="test-cards">
+              <span>Нажми, чтобы подставить тестовые данные (срок 12/29, CVC 123):</span>
+              <button type="button" className="btn small" onClick={() => (setCard(TEST_CARD), setExp('12/29'), setCvc('123'), setError(''))}>
+                {TEST_CARD} · успех
+              </button>
+              <button type="button" className="btn small" onClick={() => (setCard(TEST_CARD_DECLINED), setExp('12/29'), setCvc('123'), setError(''))}>
+                {TEST_CARD_DECLINED} · отказ банка
+              </button>
+              <span>Реальные карты не принимаются.</span>
+            </div>
             {error && <p className="error">{error}</p>}
             <div className="row">
               <button className="btn primary">Оплатить {PRO_PRICE_KZT} ₸</button>
