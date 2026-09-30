@@ -221,7 +221,7 @@ export function Leaderboard() {
   return (
     <div className="page">
       <h1>Рейтинг</h1>
-      <p className="muted">Только онлайн-матчи, результат которых определил сервер. Рейтинг Эло меняется в матчах между людьми.</p>
+      <p className="muted">Только онлайн-матчи, результат которых определил сервер. Рейтинг Эло меняется только в матчах, где все игроки вошли в аккаунт.</p>
       <Seg value={tab} onChange={setTab} items={[['players', 'Игроки'], ['groups', 'Группы']]} />
       {error && <p className="error">{error}</p>}
       {!data && !error && <p className="muted">Загрузка…</p>}
