@@ -131,8 +131,8 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   }
 
   if (path === '/rooms' && method === 'POST') {
-    const b = await body<{ teamSize: number; bestOf: number; durationSec: number }>(req);
-    const teamSize = b.teamSize === 2 ? 2 : 1;
+    const b = await body<{ bestOf: number; durationSec: number }>(req);
+    const teamSize = 1; // 1×1 only; the engine and room support teams, but the product does not expose them
     const bestOf = [1, 3, 5].includes(b.bestOf as number) ? (b.bestOf as number) : 3;
     const durationSec = [45, 60, 90].includes(b.durationSec as number) ? (b.durationSec as number) : 60;
     // A code that is already in use answers 409; try another one.

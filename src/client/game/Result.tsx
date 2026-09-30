@@ -30,7 +30,6 @@ export function StatsGrid({ st }: { st: PlayerStats }) {
     ['Отбито', st.burstsBlocked],
     ['Выдохся', st.exhaustions],
   ];
-  if (st.syncs) items.push(['Синхрон', st.syncs]);
   return (
     <div className="stats-grid">
       {items.map(([k, v]) => (

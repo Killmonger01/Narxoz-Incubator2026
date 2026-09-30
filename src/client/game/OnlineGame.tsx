@@ -256,7 +256,7 @@ function PauseOverlay({ name, endsAt }: { name: string; endsAt: number }) {
         <h2>Пауза</h2>
         <p>
           <b>{name}</b> потерял соединение. Ждём ещё {Math.max(0, Math.ceil((endsAt - now) / 1000))} с — потом засчитаем
-          техническое поражение (в 2×2 игрока заменит бот).
+          техническое поражение.
         </p>
       </div>
     </div>
@@ -296,7 +296,7 @@ function Lobby({
       <div className="lobby-head">
         <div>
           <p className="eyebrow">
-            Комната · {room.teamSize}×{room.teamSize} · {room.bestOf === 1 ? '1 раунд' : `до ${Math.ceil(room.bestOf / 2)} побед`} · {room.durationSec} с
+            Комната · 1×1 · {room.bestOf === 1 ? '1 раунд' : `до ${Math.ceil(room.bestOf / 2)} побед`} · {room.durationSec} с
           </p>
           <h1 className="code">{room.code}</h1>
         </div>
@@ -381,12 +381,6 @@ function Lobby({
             ? `Ждём готовности: ${notReady}.`
             : 'Все готовы — начинаем!'}
       </p>
-      {room.teamSize === 2 && (
-        <p className="tip">
-          💡 2×2: если вы с напарником тянете на один и тот же бит — «Синхрон!» ×1.5. Рывки в пределах трети секунды
-          друг от друга — «Командный рывок» ×1.4.
-        </p>
-      )}
       <p className="muted small">Управление: Пробел/A — тянуть, S — упор (держать), D — рывок. На телефоне — кнопки внизу.</p>
     </div>
   );

@@ -182,7 +182,6 @@ export function Controls() {
 
 export function OnlineSetup() {
   const user = useUser();
-  const [teamSize, setTeamSize] = useState(1);
   const [bestOf, setBestOf] = useState(3);
   const [duration, setDuration] = useState(60);
   const [code, setCode] = useState('');
@@ -200,7 +199,7 @@ export function OnlineSetup() {
     setBusy(true);
     setError('');
     try {
-      const { code } = await api('/rooms', { body: { teamSize, bestOf, durationSec: duration } });
+      const { code } = await api('/rooms', { body: { bestOf, durationSec: duration } });
       navigate(`/r/${code}`);
     } catch (e) {
       setError((e as Error).message);
@@ -230,10 +229,6 @@ export function OnlineSetup() {
         <div className="card flat">
           <h3>Создать комнату</h3>
           <div className="options">
-            <label>
-              Формат
-              <Seg value={teamSize} onChange={setTeamSize} items={[[1, '1 × 1'], [2, '2 × 2']]} />
-            </label>
             <label>
               Серия
               <Seg value={bestOf} onChange={setBestOf} items={[[1, '1 раунд'], [3, 'до 2'], [5, 'до 3']]} />
@@ -324,7 +319,6 @@ export function Rules() {
         <li>Видишь у соперника «РЫВОК» — готовь упор.</li>
         <li>Соперник упёрся — отдыхай: тянуть в упор невыгодно.</li>
         <li>Соперник отдыхает или выдохся — самое время для рывка.</li>
-        <li>В 2×2 тяните на один бит с напарником — «Синхрон!» ×1.5, а одновременные рывки — «Командный рывок» ×1.4.</li>
       </ul>
       <h2>Честность</h2>
       <p>
