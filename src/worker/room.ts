@@ -514,7 +514,8 @@ export class Room extends DurableObject<Env> {
   private async recordResults() {
     const m = this.match!;
     const w = this.seriesWinner;
-    const humansOnly = this.slots.every((s) => !s.bot);
+    // Elo changes only when every seat is a signed-in human (no bots, no guests).
+    const humansOnly = this.slots.every((s) => !s.bot && s.userId);
     const avg = (t: 0 | 1) => {
       const r = this.slots.filter((_, i) => this.team(i) === t).map((s) => s.rating);
       return r.reduce((a, b) => a + b, 0) / r.length;
