@@ -1108,3 +1108,231 @@ select {
   animation: none;
   opacity: 0.45;
 }
+
+/* ---- Poster home ------------------------------------------------------ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.poster {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: #fff;
+  font-family: Rubik, sans-serif;
+}
+.poster-half {
+  position: absolute;
+  inset: 0 50% 0 0;
+  background: var(--red);
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 80px);
+}
+.poster-half.blue {
+  inset: 0 0 0 50%;
+  background-color: var(--blue);
+}
+.poster-nav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px clamp(16px, 4vw, 48px);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.poster-nav nav {
+  display: flex;
+  gap: 4px 20px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.poster-nav a {
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.poster-nav a.outline {
+  border: 2px solid #fff;
+  padding: 3px 12px;
+  border-radius: 99px;
+}
+.poster-nav a:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.poster-word {
+  position: absolute;
+  top: 120px;
+  z-index: 1;
+  font-size: clamp(64px, 13vw, 168px);
+  line-height: 0.85;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  pointer-events: none;
+  user-select: none;
+}
+.poster-word.left {
+  left: clamp(16px, 4vw, 48px);
+}
+.poster-word.right {
+  right: clamp(16px, 4vw, 48px);
+  text-align: right;
+}
+.poster-rope {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: min(452px, 50%);
+  height: 14px;
+  background: #c8a165;
+  background-image: repeating-linear-gradient(90deg, transparent 0 24px, rgba(0, 0, 0, 0.18) 24px 34px);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+}
+.poster-card {
+  position: relative;
+  z-index: 3;
+  width: min(400px, calc(100% - 32px));
+  margin: clamp(300px, 42vh, 380px) auto 60px;
+  background: #faf7ee;
+  color: #1b1f3b;
+  border-radius: 22px;
+  padding: 26px 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+.poster-mark {
+  align-self: center;
+  width: 18px;
+  height: 40px;
+  margin-top: -46px;
+  background: var(--red);
+  border: 3px solid #fff;
+  box-sizing: border-box;
+  border-radius: 3px 3px 9px 9px;
+}
+.poster-card .eyebrow {
+  text-align: center;
+  color: #6b7199;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  font-size: 12px;
+}
+.poster-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font: 700 18px Rubik, sans-serif;
+  color: #1b1f3b;
+  background: #fff;
+  border: 2px solid #1b1f3b;
+  border-radius: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.08s, background 0.15s;
+}
+.poster-btn small {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7199;
+}
+.poster-btn:hover {
+  background: #fff6d1;
+}
+.poster-btn:active {
+  transform: scale(0.98);
+}
+.poster-btn.primary {
+  background: #1b1f3b;
+  color: var(--accent);
+  font-weight: 900;
+  font-size: 20px;
+  padding: 16px 20px;
+}
+.poster-btn.primary small {
+  color: var(--muted);
+}
+.poster-btn.primary:hover {
+  background: #262c57;
+}
+.poster-links {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.poster-links a {
+  color: #1b1f3b;
+}
+.poster-links a.hot {
+  color: var(--red);
+  font-weight: 700;
+}
+.poster-links span {
+  color: #a6abd6;
+}
+.poster-foot {
+  position: absolute;
+  bottom: 28px;
+  z-index: 1;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+}
+.poster-foot.left {
+  left: clamp(16px, 4vw, 48px);
+}
+.poster-foot.right {
+  right: clamp(16px, 4vw, 48px);
+  text-align: right;
+}
+@media (max-width: 760px) {
+  .poster-half {
+    inset: 0 0 50% 0;
+  }
+  .poster-half.blue {
+    inset: 50% 0 0 0;
+  }
+  .poster-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .poster-nav nav {
+    justify-content: flex-start;
+  }
+  .poster-word {
+    top: auto;
+    font-size: clamp(56px, 18vw, 96px);
+  }
+  .poster-word.left {
+    top: 120px;
+  }
+  .poster-word.right {
+    bottom: 80px;
+  }
+  .poster-rope {
+    top: 50%;
+  }
+  .poster-card {
+    margin: 120px auto 120px;
+  }
+  .poster-foot {
+    display: none;
+  }
+}

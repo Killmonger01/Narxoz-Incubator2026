@@ -34,6 +34,8 @@ function Nav() {
   );
 }
 
+const KNOWN = new Set(['/game', '/tutorial', '/play/bot', '/play/hotseat', '/online', '/rules', '/challenges', '/profile', '/leaderboard', '/shop', '/settings', '/login']);
+
 function App() {
   const { path, state } = useRoute();
   useEffect(() => {
@@ -42,6 +44,7 @@ function App() {
 
   const room = path.match(/^\/r\/([A-Za-z0-9]{5})$/);
   const inGame = path === '/game' || path === '/tutorial' || (room && true);
+  const poster = path === '/' || (!room && !inGame && !KNOWN.has(path));
   let page: React.ReactNode;
   if (room) {
     const watch = new URLSearchParams(location.search).get('watch') === '1';
@@ -89,7 +92,7 @@ function App() {
     }
   return (
     <div className={`app ${inGame ? 'in-game' : ''}`}>
-      {!inGame && <Nav />}
+      {!inGame && !poster && <Nav />}
       <main>{page}</main>
     </div>
   );

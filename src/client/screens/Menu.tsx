@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DIFFICULTY_LABEL, type Difficulty } from '../../shared/bot.ts';
 import { api, useUser } from '../api.ts';
-import { navigate } from '../router.ts';
+import { navigate, useRoute } from '../router.ts';
 import { setSettings, tutorialDone, useSettings } from '../store.ts';
 import { unlockAudio } from '../audio.ts';
 
@@ -14,54 +14,71 @@ const DIFF_TEXT: Record<Difficulty, string> = {
 
 export function Home() {
   const user = useUser();
+  const { path } = useRoute();
   const firstTime = !tutorialDone();
-  return (
-    <div className="page home">
-      <section className="hero">
-        <h1>
-          Тянем<span>‑</span>Потянем
-        </h1>
-        <p className="lead">
-          Перетягивание каната, где побеждает не тот, кто быстрее жмёт, а тот, кто держит ритм, бережёт силы и
-          выбирает момент для рывка.
-        </p>
-        {firstTime && (
-          <button className="btn primary big" onClick={() => navigate('/tutorial')}>
-            Первый раз? Пройди обучение за 1 минуту
-          </button>
-        )}
-      </section>
-      <div className="modes">
-        <ModeCard icon="🤖" title="Против бота" text="4 уровня сложности, серии раундов" onClick={() => navigate('/play/bot')} primary={!firstTime} />
-        <ModeCard icon="🌐" title="Онлайн с другом" text="Комната по ссылке, 1×1 или 2×2, рейтинг" onClick={() => navigate('/online')} />
-        <ModeCard icon="👥" title="Вдвоём на одном экране" text="Клавиатура пополам или телефон на столе" onClick={() => navigate('/play/hotseat')} />
-        <ModeCard icon="🎯" title="Испытания" text="Метроном, спринт, камбэк — побей свой рекорд" onClick={() => navigate('/challenges')} />
-        <ModeCard icon="🎓" title="Обучение" text="Пошаговая тренировка с манекеном" onClick={() => navigate('/tutorial')} />
-        <ModeCard icon="📖" title="Правила" text="Как устроены ритм, рывок, упор и отдых" onClick={() => navigate('/rules')} />
-      </div>
-      {!user && (
-        <p className="muted center">
-          <a onClick={() => navigate('/login')}>Войди или зарегистрируйся</a>, чтобы история матчей, рекорды и рейтинг
-          были доступны с любого устройства.
-        </p>
-      )}
-    </div>
+  const go = (to: string, state?: unknown) => () => {
+    unlockAudio();
+    navigate(to, state);
+  };
+  const link = (to: string, label: string, cls = '') => (
+    <a className={`${cls} ${path === to ? 'on' : ''}`} onClick={go(to)}>
+      {label}
+    </a>
   );
-}
-
-function ModeCard({ icon, title, text, onClick, primary }: { icon: string; title: string; text: string; onClick: () => void; primary?: boolean }) {
   return (
-    <button
-      className={`mode ${primary ? 'primary' : ''}`}
-      onClick={() => {
-        unlockAudio();
-        onClick();
-      }}
-    >
-      <span className="mode-icon">{icon}</span>
-      <b>{title}</b>
-      <span>{text}</span>
-    </button>
+    <div className="poster">
+      <div className="poster-half red" />
+      <div className="poster-half blue" />
+      <header className="poster-nav">
+        <span className="poster-brand">Школьный двор · Narxoz</span>
+        <nav>
+          {link('/rules', 'Правила')}
+          {link('/leaderboard', 'Рейтинг')}
+          {link('/shop', 'Pro')}
+          {link('/settings', 'Настройки')}
+          {user ? link('/profile', user.username, 'outline') : link('/login', 'Войти', 'outline')}
+        </nav>
+      </header>
+      <div className="poster-word left" aria-hidden="true">ТЯНЕМ</div>
+      <div className="poster-word right" aria-hidden="true">
+        ПОТЯ‑<br />НЕМ
+      </div>
+      <h1 className="sr-only">Тянем‑Потянем — перетягивание каната</h1>
+      <div className="poster-rope" />
+      <div className="poster-card">
+        <span className="poster-mark" />
+        <span className="eyebrow">Выбери матч</span>
+        <button className="poster-btn primary" onClick={go('/play/bot')}>
+          Против бота <small>4 уровня</small>
+        </button>
+        <button className="poster-btn" onClick={go('/online')}>
+          Онлайн с другом <small>по ссылке</small>
+        </button>
+        <button className="poster-btn" onClick={go('/play/hotseat')}>
+          Вдвоём на экране <small>ASD / LKJ</small>
+        </button>
+        <button className="poster-btn" onClick={go('/challenges')}>
+          Испытания <small>рекорды</small>
+        </button>
+        <p className="poster-links">
+          <a className={firstTime ? 'hot' : ''} onClick={go('/tutorial')}>
+            {firstTime ? 'Первый раз? Обучение за минуту' : 'Обучение за минуту'}
+          </a>
+          <span>·</span>
+          <a onClick={go('/rules')}>Правила</a>
+        </p>
+      </div>
+      <p className="poster-foot left">
+        Держи ритм. Береги силы.
+        <br />
+        Рви, когда соперник выдохся.
+      </p>
+      <p className="poster-foot right">
+        Минута на матч.
+        <br />
+        Реванш — сразу.
+      </p>
+    </div>
   );
 }
 
