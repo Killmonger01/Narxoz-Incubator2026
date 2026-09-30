@@ -1670,3 +1670,10 @@ select {
   align-self: flex-start;
   font-variant-numeric: tabular-nums;
 }
+
+/* Touch devices: the buttons are the controls, key names would only confuse. */
+@media (pointer: coarse) {
+  .pad button small {
+    display: none;
+  }
+}
