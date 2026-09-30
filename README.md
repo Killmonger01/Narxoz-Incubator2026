@@ -1,6 +1,7 @@
 # Тянем‑Потянем — перетягивание каната в браузере
 
-**Играть:** https://kanat.&lt;subdomain&gt;.workers.dev *(ссылка появится после деплоя)*
+**Играть:** https://kanat.tyanem-potyanem.workers.dev
+**Репозиторий:** https://github.com/Killmonger01/Narxoz-Incubator2026
 **Тестовый аккаунт:** `demo` / `demo123` (или зарегистрируйтесь за 10 секунд)
 
 Задание второго этапа Narxoz Incubator 2026 — «Перетягивание каната».
@@ -174,12 +175,17 @@ npx wrangler dev             # http://localhost:8787 — игра + API + WebSoc
 
 ### Деплой
 
+Рабочая версия: https://kanat.tyanem-potyanem.workers.dev (Cloudflare Workers; фронтенд, API, WebSocket и база — в одном деплое).
+
 ```bash
 npx wrangler login
 npx wrangler d1 create kanat-db          # вписать database_id в wrangler.jsonc
 npm run db:migrate:remote
 npm run deploy
 ```
+
+Копия фронтенда на Vercel (https://narxoz-incubator2026.vercel.app) не содержит серверной части: там работают только режимы
+против бота и вдвоём на одном устройстве.
 
 ## AI‑инструменты
 

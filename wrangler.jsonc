@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "kanat-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "7422eee1-1dca-4a38-ad0c-1c84dee88b99",
       "migrations_dir": "migrations"
     }
   ],
