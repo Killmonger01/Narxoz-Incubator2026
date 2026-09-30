@@ -1336,3 +1336,208 @@ select {
     display: none;
   }
 }
+
+/* ---- Poster theme for every non-game page ------------------------------ */
+.app.shell {
+  min-height: 100dvh;
+  background-color: var(--red);
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 80px),
+    linear-gradient(90deg, var(--red) 50%, var(--blue) 50%);
+  color: #fff;
+}
+.app.shell > main {
+  position: relative;
+  padding: 0 16px 48px;
+}
+.app.shell > main::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 26px;
+  height: 14px;
+  background: #c8a165;
+  background-image: repeating-linear-gradient(90deg, transparent 0 24px, rgba(0, 0, 0, 0.18) 24px 34px);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+}
+.app.shell .poster-nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.app.shell .poster-nav a.on {
+  color: var(--accent);
+}
+.poster-brand {
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+.app.shell .page {
+  --bg: #fff;
+  --bg2: #f6f1e6;
+  --card: #fff;
+  --line: #d9d3c4;
+  --text: #1b1f3b;
+  --muted: #6b7199;
+  position: relative;
+  color: var(--text);
+  background: #faf7ee;
+  border-radius: 22px;
+  padding: 28px clamp(18px, 3vw, 40px) 40px;
+  margin: 40px auto 24px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+.app.shell .page.narrow {
+  max-width: 560px;
+}
+.app.shell .page::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  width: 18px;
+  height: 40px;
+  margin-left: -9px;
+  background: var(--red);
+  border: 3px solid #fff;
+  box-sizing: border-box;
+  border-radius: 3px 3px 9px 9px;
+}
+.app.shell .page a {
+  color: #1b1f3b;
+}
+.app.shell .page h1 {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+.app.shell .btn {
+  border-width: 2px;
+  border-color: #1b1f3b;
+}
+.app.shell .btn:hover {
+  background: #fff6d1;
+}
+.app.shell .btn.primary {
+  background: #1b1f3b;
+  color: var(--accent);
+  border-color: #1b1f3b;
+}
+.app.shell .btn.primary:hover {
+  background: #262c57;
+}
+.app.shell .btn.ghost {
+  border-color: transparent;
+}
+.app.shell .seg button.on {
+  background: #1b1f3b;
+  color: #fff;
+  box-shadow: none;
+}
+.app.shell .mode,
+.app.shell .diff,
+.app.shell .item {
+  border: 2px solid #1b1f3b;
+  background: #fff;
+}
+.app.shell .mode:hover,
+.app.shell .diff.on,
+.app.shell .item.on {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red) inset;
+}
+.app.shell .mode.primary {
+  border-color: #1b1f3b;
+  box-shadow: none;
+}
+.app.shell .mode.primary b,
+.app.shell .diff b,
+.app.shell .mode .record {
+  color: var(--red);
+}
+.app.shell .pill {
+  background: #fff;
+}
+.app.shell .pill.ok {
+  color: #1d8f4e;
+  border-color: #1d8f4e;
+}
+.app.shell .pill.warn {
+  color: #b7791f;
+  border-color: #b7791f;
+}
+.app.shell .badge {
+  background: #1d8f4e;
+  color: #fff;
+}
+.app.shell .tip {
+  background: #fff6d1;
+}
+.app.shell .error {
+  color: #c62828;
+}
+.app.shell .hscore .up,
+.app.shell .table .up {
+  color: #1d8f4e;
+}
+.app.shell .hscore .down {
+  color: #c62828;
+}
+.app.shell .hrow.win {
+  border-left-color: #1d8f4e;
+}
+.app.shell .hrow.loss {
+  border-left-color: #c62828;
+}
+.app.shell .stat-card b,
+.app.shell .big-score {
+  color: #1b1f3b;
+}
+.app.shell .code {
+  color: var(--red);
+}
+.app.shell .slot.you {
+  box-shadow: 0 0 0 2px var(--red) inset;
+}
+.app.shell .overlay {
+  background: rgba(27, 31, 59, 0.55);
+}
+.app.shell .overlay .card {
+  background: #faf7ee;
+  border-color: #1b1f3b;
+}
+.app.shell .poster-links a.hot {
+  color: var(--red);
+}
+.app.shell input,
+.app.shell select {
+  border: 2px solid var(--line);
+}
+.app.shell .poster {
+  margin: 0 -16px;
+}
+.app.shell .poster ~ *,
+.app.shell main:has(.poster)::before {
+  display: none;
+}
+@media (max-width: 760px) {
+  .app.shell {
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 80px),
+      linear-gradient(180deg, var(--red) 50%, var(--blue) 50%);
+  }
+  .app.shell > main::before {
+    top: 40px;
+  }
+  .app.shell .page {
+    margin-top: 24px;
+  }
+}
+.app.shell .team-col {
+  background: color-mix(in srgb, var(--team) 8%, #fff);
+}
+.app.shell .slot {
+  border: 2px solid var(--line);
+}

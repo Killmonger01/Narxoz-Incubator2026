@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { navigate, useRoute } from './router.ts';
 import { refreshMe, useUser } from './api.ts';
+import { useRoomInMatch } from './chrome.ts';
 import { Home, BotSetup, HotseatSetup, OnlineSetup, Rules } from './screens/Menu.tsx';
 import { Challenges, Leaderboard, Login, Profile } from './screens/Account.tsx';
 import { Settings, Shop } from './screens/Shop.tsx';
@@ -14,20 +15,20 @@ function Nav() {
   const user = useUser();
   const { path } = useRoute();
   const link = (to: string, label: string) => (
-    <a className={path === to ? 'on' : ''} onClick={() => navigate(to)}>
+    <a className={`${to === '/login' || to === '/profile' ? 'outline' : ''} ${path === to ? 'on' : ''}`} onClick={() => navigate(to)}>
       {label}
     </a>
   );
   return (
-    <header className="nav">
-      <a className="logo" onClick={() => navigate('/')}>
-        <img src="/favicon.svg" alt="" width="26" height="26" /> <span>Тянем‑Потянем</span>
+    <header className="poster-nav">
+      <a className="poster-brand" onClick={() => navigate('/')}>
+        Тянем‑Потянем
       </a>
       <nav>
         {link('/rules', 'Правила')}
         {link('/leaderboard', 'Рейтинг')}
         {link('/shop', 'Pro')}
-        {link('/settings', '⚙')}
+        {link('/settings', 'Настройки')}
         {user ? link('/profile', user.username) : link('/login', 'Войти')}
       </nav>
     </header>
@@ -38,12 +39,13 @@ const KNOWN = new Set(['/game', '/tutorial', '/play/bot', '/play/hotseat', '/onl
 
 function App() {
   const { path, state } = useRoute();
+  const roomInMatch = useRoomInMatch();
   useEffect(() => {
     refreshMe();
   }, []);
 
   const room = path.match(/^\/r\/([A-Za-z0-9]{5})$/);
-  const inGame = path === '/game' || path === '/tutorial' || (room && true);
+  const inGame = path === '/game' || path === '/tutorial' || (room && roomInMatch);
   const poster = path === '/' || (!room && !inGame && !KNOWN.has(path));
   let page: React.ReactNode;
   if (room) {
@@ -91,7 +93,7 @@ function App() {
         page = <Home />;
     }
   return (
-    <div className={`app ${inGame ? 'in-game' : ''}`}>
+    <div className={`app ${inGame ? 'in-game' : 'shell'}`}>
       {!inGame && !poster && <Nav />}
       <main>{page}</main>
     </div>

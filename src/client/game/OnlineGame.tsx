@@ -10,6 +10,7 @@ import { teamColors } from './LocalGame.tsx';
 import { getToken, useUser } from '../api.ts';
 import { addLocalMatch, clientId, setSettings, useSettings } from '../store.ts';
 import { navigate } from '../router.ts';
+import { setRoomInMatch } from '../chrome.ts';
 
 type Conn = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
@@ -18,6 +19,10 @@ export function OnlineGame({ code, watch }: { code: string; watch: boolean }) {
   const settings = useSettings();
   const [name, setName] = useState(user?.username || settings.name);
   const [joined, setJoined] = useState(!!(user || settings.name || watch));
+  useEffect(() => {
+    if (!joined) setRoomInMatch(false);
+  }, [joined]);
+  useEffect(() => () => setRoomInMatch(false), []);
 
   if (!joined)
     return (
@@ -133,7 +138,8 @@ function Room({ code, watch, name }: { code: string; watch: boolean; name: strin
   }, [room, last]);
   useEffect(() => {
     if (room?.phase === 'match') savedRef.current = false;
-  }, [room?.phase]);
+    setRoomInMatch(!!room && room.phase !== 'lobby');
+  }, [room?.phase, !!room]);
 
   if (conn === 'closed' && !room)
     return (
@@ -287,9 +293,6 @@ function Lobby({
 
   return (
     <div className="page">
-      <button className="btn ghost small" onClick={() => navigate('/')}>
-        ← В меню
-      </button>
       <div className="lobby-head">
         <div>
           <p className="eyebrow">
