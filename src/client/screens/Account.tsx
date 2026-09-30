@@ -11,7 +11,6 @@ export function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [group, setGroup] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +19,7 @@ export function Login() {
     setBusy(true);
     setError('');
     try {
-      const data = await api(`/auth/${mode}`, { body: { username, password, group } });
+      const data = await api(`/auth/${mode}`, { body: { username, password } });
       setAuth(data.token, data.user);
       navigate(route.state?.back ?? '/profile', null, true);
     } catch (err) {
@@ -44,9 +43,6 @@ export function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        {mode === 'register' && (
-          <input placeholder="Группа или команда (необязательно), напр. ИС-21" value={group} maxLength={30} onChange={(e) => setGroup(e.target.value)} />
-        )}
         {error && <p className="error">{error}</p>}
         <button className="btn primary big" disabled={busy}>
           {busy ? '…' : mode === 'login' ? 'Войти' : 'Создать аккаунт'}
@@ -80,8 +76,6 @@ export function Profile() {
   const user = useUser();
   const [data, setData] = useState<any>(null);
   const [matches, setMatches] = useState<ServerMatch[] | null>(null);
-  const [group, setGroup] = useState(user?.group ?? '');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -111,7 +105,6 @@ export function Profile() {
             <p className="muted">
               Рейтинг <b>{user.rating}</b>
               {user.pro && <span className="pill pro">PRO</span>}
-              {user.group && ` · ${user.group}`}
             </p>
           ) : (
             <p className="muted">
@@ -161,20 +154,6 @@ export function Profile() {
         ))}
       </div>
 
-      {user && (
-        <form
-          className="form inline"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const d = await api('/me', { method: 'PATCH', body: { group } });
-            setAuth(getToken(), d.user);
-            setSaved(true);
-          }}
-        >
-          <input placeholder="Группа / команда для рейтинга групп" value={group} maxLength={30} onChange={(e) => (setGroup(e.target.value), setSaved(false))} />
-          <button className="btn">{saved ? 'Сохранено' : 'Сохранить'}</button>
-        </form>
-      )}
 
       <h2>История матчей</h2>
       {user && matches === null && <p className="muted">Загрузка…</p>}
@@ -210,8 +189,7 @@ export function Profile() {
 }
 
 export function Leaderboard() {
-  const [data, setData] = useState<{ players: any[]; groups: any[] } | null>(null);
-  const [tab, setTab] = useState<'players' | 'groups'>('players');
+  const [data, setData] = useState<{ players: any[] } | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     api('/leaderboard')
@@ -222,16 +200,14 @@ export function Leaderboard() {
     <div className="page">
       <h1>Рейтинг</h1>
       <p className="muted">Только онлайн-матчи, результат которых определил сервер. Рейтинг Эло меняется только в матчах, где все игроки вошли в аккаунт.</p>
-      <Seg value={tab} onChange={setTab} items={[['players', 'Игроки'], ['groups', 'Группы']]} />
       {error && <p className="error">{error}</p>}
       {!data && !error && <p className="muted">Загрузка…</p>}
-      {data && tab === 'players' && (
+      {data && (
         <table className="table">
           <thead>
             <tr>
               <th>#</th>
               <th>Игрок</th>
-              <th>Группа</th>
               <th>Рейтинг</th>
               <th>П–П</th>
             </tr>
@@ -243,7 +219,6 @@ export function Leaderboard() {
                 <td>
                   {p.username} {p.pro && <span className="pill pro">PRO</span>}
                 </td>
-                <td className="muted">{p.group || '—'}</td>
                 <td>
                   <b>{p.rating}</b>
                 </td>
@@ -254,51 +229,13 @@ export function Leaderboard() {
             ))}
             {data.players.length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={4} className="muted">
                   Пока никто не сыграл онлайн. Стань первым!
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      )}
-      {data && tab === 'groups' && (
-        <>
-          <p className="muted small">Укажи группу в профиле — и каждая твоя онлайн-победа пойдёт в зачёт группы.</p>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Группа</th>
-                <th>Побед</th>
-                <th>Игр</th>
-                <th>Игроков</th>
-                <th>Ср. рейтинг</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.groups.map((g, i) => (
-                <tr key={g.name}>
-                  <td>{i + 1}</td>
-                  <td>
-                    <b>{g.name}</b>
-                  </td>
-                  <td>{g.wins}</td>
-                  <td>{g.games}</td>
-                  <td>{g.members}</td>
-                  <td>{g.rating}</td>
-                </tr>
-              ))}
-              {data.groups.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    Пока ни одна группа не сыграла.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </>
       )}
     </div>
   );

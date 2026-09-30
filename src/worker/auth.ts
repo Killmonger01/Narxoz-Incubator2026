@@ -20,7 +20,6 @@ export interface UserRow {
 export interface PublicUser {
   id: string;
   username: string;
-  group: string;
   rating: number;
   pro: boolean;
   proUntil: number;
@@ -91,7 +90,6 @@ export function publicUser(u: UserRow): PublicUser {
   return {
     id: u.id,
     username: u.username,
-    group: u.group_name,
     rating: u.rating,
     pro,
     proUntil: u.pro_until,

@@ -4,7 +4,6 @@ import type { Cosmetics } from '../shared/cosmetics.ts';
 export interface User {
   id: string;
   username: string;
-  group: string;
   rating: number;
   pro: boolean;
   proUntil: number;

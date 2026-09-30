@@ -70,7 +70,7 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   const me = () => userFromToken(env, token);
 
   if (path === '/auth/register' && method === 'POST') {
-    const b = await body<{ username: string; password: string; group: string }>(req);
+    const b = await body<{ username: string; password: string }>(req);
     const username = str(b.username, 40);
     const password = typeof b.password === 'string' ? b.password : '';
     if (!USERNAME_RE.test(username)) return fail(400, 'Ник: 3–20 символов, буквы, цифры, _ . -');
@@ -82,7 +82,7 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     await env.DB.prepare(
       'INSERT INTO users (id, username, pass_hash, salt, group_name, created_at) VALUES (?, ?, ?, ?, ?, ?)',
     )
-      .bind(id, username, await hashPassword(password, salt), salt, str(b.group, 30), Date.now())
+      .bind(id, username, await hashPassword(password, salt), salt, '', Date.now())
       .run();
     const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<UserRow>();
     return json({ token: await createSession(env, id), user: publicUser(user!) });
@@ -106,27 +106,19 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
 
   if (path === '/leaderboard' && method === 'GET') {
     const players = await env.DB.prepare(
-      `SELECT u.username, u.group_name, u.rating, u.pro_until,
+      `SELECT u.username, u.rating, u.pro_until,
               SUM(m.result = 'win') AS wins, SUM(m.result = 'loss') AS losses
        FROM users u JOIN matches m ON m.user_id = u.id AND m.mode = 'online'
        GROUP BY u.id ORDER BY u.rating DESC, wins DESC LIMIT 50`,
     ).all();
-    const groups = await env.DB.prepare(
-      `SELECT u.group_name AS name, COUNT(DISTINCT u.id) AS members,
-              SUM(m.result = 'win') AS wins, COUNT(m.id) AS games, ROUND(AVG(u.rating)) AS rating
-       FROM users u JOIN matches m ON m.user_id = u.id AND m.mode = 'online'
-       WHERE u.group_name != '' GROUP BY u.group_name ORDER BY wins DESC LIMIT 30`,
-    ).all();
     return json({
       players: players.results.map((r: any) => ({
         username: r.username,
-        group: r.group_name,
         rating: r.rating,
         pro: r.pro_until > Date.now(),
         wins: r.wins ?? 0,
         losses: r.losses ?? 0,
       })),
-      groups: groups.results,
     });
   }
 
@@ -182,12 +174,11 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   }
 
   if (path === '/me' && method === 'PATCH') {
-    const b = await body<{ group: string; cosmetics: unknown }>(req);
+    const b = await body<{ cosmetics: unknown }>(req);
     const pub = publicUser(user);
-    const group = b.group !== undefined ? str(b.group, 30) : user.group_name;
     const cosmetics = b.cosmetics !== undefined ? sanitizeCosmetics(b.cosmetics as any, pub.pro) : pub.cosmetics;
-    await env.DB.prepare('UPDATE users SET group_name = ?, cosmetics = ? WHERE id = ?')
-      .bind(group, JSON.stringify(cosmetics), user.id)
+    await env.DB.prepare('UPDATE users SET cosmetics = ? WHERE id = ?')
+      .bind(JSON.stringify(cosmetics), user.id)
       .run();
     const fresh = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first<UserRow>();
     return json({ user: publicUser(fresh!) });
